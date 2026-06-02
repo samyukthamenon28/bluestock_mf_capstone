@@ -1,0 +1,24 @@
+# SQLite databases — share schema.sql instead
+*.db
+data/db/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Large data files
+data/raw/*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
