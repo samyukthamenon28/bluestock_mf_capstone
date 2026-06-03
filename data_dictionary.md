@@ -9,7 +9,7 @@ This document provides the database schema reference, data types, constraints, a
 erDiagram
     dim_fund ||--o{ fact_nav : "amfi_code"
     dim_fund ||--o{ fact_transactions : "amfi_code"
-    dim_fund ||--|{ fact_performance : "amfi_code"
+    dim_fund ||--|| fact_performance : "amfi_code"
     dim_date ||--o{ fact_nav : "date_id -> nav_date"
     dim_date ||--o{ fact_transactions : "date_id -> transaction_date"
     dim_date ||--o{ fact_aum : "date_id -> aum_date"

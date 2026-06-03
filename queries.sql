@@ -1,4 +1,4 @@
--- sql/analytical_queries.sql — Bluestock MF Capstone: 10 Analytical SQL Queries (D2)
+-- queries.sql — Bluestock MF Capstone: 10 Analytical SQL Queries (D2)
 -- SQLite-compatible SQL
 
 -- ─────────────────────────────────────────────────────────────────────────────

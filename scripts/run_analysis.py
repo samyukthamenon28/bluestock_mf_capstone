@@ -14,7 +14,7 @@ import pandas as pd
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "db" / "bluestock_mf.db"
-SQL_QUERIES_PATH = ROOT / "sql" / "analytical_queries.sql"
+SQL_QUERIES_PATH = ROOT / "queries.sql"
 REPORT_PATH = ROOT / "reports" / "analytical_report.md"
 
 ROOT / "reports"  # ensure directory exists

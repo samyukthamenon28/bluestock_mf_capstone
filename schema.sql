@@ -1,4 +1,4 @@
--- sql/star_schema.sql — Bluestock MF Capstone: Custom Star Schema Definition
+-- schema.sql — Bluestock MF Capstone: Custom Star Schema Definition
 -- SQLite-compatible DDL
 
 PRAGMA foreign_keys = ON;
