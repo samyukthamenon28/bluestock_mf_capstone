@@ -1,0 +1,270 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Bluestock Mutual Fund Weekly Performance Summary</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #f8fafc;
+                margin: 0;
+                padding: 0;
+                color: #1e293b;
+            }
+            .container {
+                max-width: 800px;
+                margin: 40px auto;
+                background: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+                overflow: hidden;
+                border: 1px solid #e2e8f0;
+            }
+            .header {
+                background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+                padding: 40px;
+                color: white;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 700;
+                letter-spacing: -0.05em;
+            }
+            .header p {
+                margin: 10px 0 0 0;
+                font-size: 16px;
+                opacity: 0.9;
+            }
+            .content {
+                padding: 40px;
+            }
+            .kpi-row {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+                gap: 20px;
+            }
+            .kpi-card {
+                flex: 1;
+                background-color: #f1f5f9;
+                border-left: 4px solid #6366f1;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            }
+            .kpi-title {
+                font-size: 12px;
+                color: #64748b;
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.05em;
+            }
+            .kpi-value {
+                font-size: 22px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-top: 5px;
+            }
+            .section-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1e293b;
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 8px;
+                margin-top: 40px;
+                margin-bottom: 20px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 30px;
+            }
+            th {
+                background-color: #f8fafc;
+                color: #475569;
+                font-weight: 600;
+                text-align: left;
+                padding: 12px;
+                border-bottom: 2px solid #e2e8f0;
+                font-size: 13px;
+                text-transform: uppercase;
+            }
+            .footer {
+                background-color: #f8fafc;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #64748b;
+                border-top: 1px solid #e2e8f0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📈 Mutual Fund Weekly Performance</h1>
+                <p>Bluestock Capstone Performance Analytics Report</p>
+            </div>
+            
+            <div class="content">
+                <!-- KPI Section -->
+                <div class="kpi-row">
+                    <div class="kpi-card">
+                        <div class="kpi-title">Average 3Y CAGR</div>
+                        <div class="kpi-value">16.41%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Average Sharpe</div>
+                        <div class="kpi-value">0.28</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Average Expense</div>
+                        <div class="kpi-value">1.24%</div>
+                    </div>
+                </div>
+
+                <!-- Top 3 Leaders Section -->
+                <div class="section-title">🏆 Top 3 Leaderboard Funds</div>
+                <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                    <ol style="margin: 0; padding-left: 20px; font-size: 15px; color: #1e3a8a;">
+                        <li style="margin-bottom: 10px;"><strong>HDFC Mid-Cap Opportunities Fund - Regular - Growth</strong> (Score: 83.00) | 3Y CAGR: 32.44%</li>
+                        <li style="margin-bottom: 10px;"><strong>Axis Midcap Fund - Regular - Growth</strong> (Score: 79.38) | 3Y CAGR: 35.11%</li>
+                        <li style="margin-bottom: 0;"><strong>Kotak Flexicap Fund - Regular - Growth</strong> (Score: 77.38) | 3Y CAGR: 29.58%</li>
+                    </ol>
+                </div>
+
+                <!-- Leaderboard Table -->
+                <div class="section-title">📊 Top 10 Fund Performance Details</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Scheme Name</th>
+                            <th>Fund House</th>
+                            <th>3Y CAGR</th>
+                            <th>Sharpe</th>
+                            <th>Max DD</th>
+                            <th style="text-align: right;">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">1</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">HDFC Mid-Cap Opportunities Fund - Regular - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">HDFC Mutual Fund</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">32.44%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.72</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-16.22%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">83.00</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">2</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">Axis Midcap Fund - Regular - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Axis Mutual Fund</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">35.11%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.56</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-20.96%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">79.38</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">3</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">Kotak Flexicap Fund - Regular - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Kotak Mahindra MF</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">29.58%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.74</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-33.65%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">77.38</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">4</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">ABSL Frontline Equity Fund - Regular - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Aditya Birla Sun Life MF</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">28.97%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">1.03</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-11.29%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">73.94</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">5</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">Nippon India Large Cap Fund - Regular - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Nippon India MF</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">22.65%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.83</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-17.41%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">72.19</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">6</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">Nippon India Large Cap Fund - Direct - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Nippon India MF</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">21.09%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.73</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-18.63%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">70.94</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">7</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">ICICI Pru Midcap Fund - Regular - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">ICICI Prudential MF</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">31.78%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.18</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-71.57%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">68.62</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">8</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">SBI Bluechip Fund - Direct Plan - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">SBI Mutual Fund</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">16.27%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.62</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-16.72%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">67.62</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">9</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">SBI Bluechip Fund - Regular Plan - Growth</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">SBI Mutual Fund</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">30.46%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.52</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-30.59%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">67.06</td>
+        </tr>
+        
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">10</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">Nippon India ETF Nifty 50 BeES</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #64748b;">Nippon India MF</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #10b981; font-weight: 600;">20.01%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #334155;">0.66</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; color: #ef4444;">-11.65%</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">66.62</td>
+        </tr>
+        
+                    </tbody>
+                </table>
+                
+                <p style="font-size: 13px; color: #64748b; font-style: italic; margin-top: 20px;">
+                    * Risk calculations use 6.5% annually as the risk-free rate proxy. CAGRs are calculated on trading days (252 trading days per year).
+                </p>
+            </div>
+            
+            <div class="footer">
+                <p>Sent by Bluestock Automated Analytics Scheduler. Please do not reply directly to this email.</p>
+                <p>&copy; 2026 Bluestock Mutual Fund Capstone Project.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    
