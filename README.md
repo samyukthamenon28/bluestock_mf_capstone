@@ -5,15 +5,29 @@ Mutual Fund analytics capstone project — ETL, EDA, performance metrics, and da
 ## Quick Start
 
 ```bash
-git clone <repo-url>
-cd bluestock_mf_capstone
+# Install dependencies
 pip install -r requirements.txt
 
-# Run full ETL (fetches live NAV + loads SQLite)
+# Run the full ETL pipeline (cleans data, designs star schema, and loads SQLite)
 python scripts/etl_pipeline.py
 
-# Fetch latest NAV only (cron-friendly)
-python scripts/live_nav_fetch.py
+# Execute the SQL queries and generate reports/analytical_report.md
+python scripts/run_analysis.py
+
+# Calculate performance scorecards and generate risk-adjusted ratios
+python scripts/generate_analytics.py
+
+# Calculate Day 6 advanced analytics (VaR/CVaR, cohorts, continuity, HHI)
+python scripts/generate_advanced_analytics.py
+
+# Launch the interactive Streamlit terminal
+streamlit run dashboard/app.py
+
+# Run the CLI recommender
+python recommender.py --risk Moderate
+
+# Verify the product integrity
+python scripts/verify_product.py
 ```
 
 ## Folder Structure
@@ -21,52 +35,53 @@ python scripts/live_nav_fetch.py
 ```
 bluestock_mf_capstone/
 ├── data/
-│   ├── raw/           ← original downloaded files + mfapi JSONs
-│   ├── processed/     ← cleaned, merged CSVs
-│   └── db/            ← bluestock_mf.db  (git-ignored; use schema.sql)
+│   ├── raw/                  ← Original source files + downloaded NAVs
+│   ├── processed/            ← Cleaned, structured CSVs
+│   └── db/                   ← SQLite database (git-ignored; recreated via schema.sql)
 ├── notebooks/
-│   ├── 01_data_ingestion.ipynb
-│   ├── 02_data_cleaning.ipynb
-│   ├── 03_eda_analysis.ipynb
-│   ├── 04_performance_analytics.ipynb
-│   └── 05_advanced_analytics.ipynb
+│   ├── 01_data_ingestion (1).ipynb   ← Raw data exploration
+│   ├── EDA_Analysis.ipynb            ← Day 3: Plotly and Seaborn EDA
+│   ├── Performance_Analytics.ipynb   ← Day 4: Return and risk-adjusted metrics
+│   └── Advanced_Analytics.ipynb      ← Day 6: Tail-risk and cohort notebook
 ├── scripts/
-│   ├── etl_pipeline.py       ← D1: full ETL
-│   ├── live_nav_fetch.py     ← B1: cron NAV fetcher
-│   ├── compute_metrics.py    ← D4: Sharpe/Beta/VaR
-│   └── recommender.py        ← D6: fund recommender
+│   ├── clean_data.py                 ← Clean and format datasets
+│   ├── load_star_schema.py           ← Ingestion into SQLite star schema
+│   ├── etl_pipeline.py               ← Day 1-2 Master ETL runner
+│   ├── cron_etl.py                   ← Day 5: Weekday cron ETL update script
+│   ├── schedule_etl.py               ← Day 5: Windows Task Scheduler registrant
+│   ├── live_nav_fetch.py             ← API fetching from mfapi.in
+│   ├── generate_eda.py               ← Ingestion of EDA and figure export
+│   ├── generate_analytics.py         ← Performance calculations and scorecard output
+│   ├── generate_advanced_analytics.py ← Day 6: VaR, Sharpe, Cohorts, and HHI
+│   ├── run_analysis.py               ← Execute queries and save report
+│   ├── email_report.py               ← Day 5: weekly report compiler
+│   └── verify_product.py             ← Day 7: E2E integrity checker
 ├── sql/
-│   ├── schema.sql
-│   └── queries.sql
+│   ├── schema.sql                    ← SQLite DDL schema definition
+│   └── queries.sql                   ← Day 2: 10 analytical queries
 ├── dashboard/
-│   └── bluestock_mf.pbix
+│   └── app.py                        ← Day 5 & 6 Streamlit financial terminal
 └── reports/
-    ├── Final_Report.pdf
-    └── Presentation.pptx
+    ├── analytical_report.md          ← Compiled SQL query results
+    ├── weekly_performance_report.html ← Weekly HTML summary report
+    └── figures/                      ← Saved EDA and performance charts
 ```
 
-## Cron Job (B1 — Bonus)
+## Scheduler Configuration (B1)
 
-Add to crontab for weekday 8 PM IST fetches:
+The NAV update pipeline is scheduled to auto-run every weekday at 8:00 PM IST. 
 
+For Windows, it uses a Windows Task Scheduler task named `Bluestock_MF_ETL` which executes `scripts/cron_etl.py`.
+
+For Linux/MacOS systems, append the following to the crontab:
 ```
-0 14 * * 1-5  /usr/bin/python3 /absolute/path/scripts/live_nav_fetch.py >> /absolute/path/live_nav.log 2>&1
+0 20 * * 1-5  /usr/bin/python3 /absolute/path/scripts/cron_etl.py >> /absolute/path/cron_etl.log 2>&1
 ```
 
-## Key Schemes
+## Key Development Rules
 
-| Label | AMFI Code |
-|---|---|
-| HDFC Top 100 Direct | 125497 |
-| SBI Bluechip | 119551 |
-| ICICI Bluechip | 120503 |
-| Nippon Large Cap | 118632 |
-| Axis Bluechip | 119092 |
-| Kotak Bluechip | 120841 |
-
-## Notes
-
-- All NAV series are forward-filled for weekends/holidays after reindex to full calendar range
-- CAGR uses 252 trading days, not 365 calendar days
-- AUM columns are in **INR Crore** (not lakh-crore) — units in column names
-- Never commit `.db` files — use `schema.sql` to recreate
+- **Holiday Treatment**: All NAV timelines are reindexed to a full calendar date range and forward-filled (`ffill()`) to prevent weekend/holiday return distortions.
+- **CAGR Calculations**: Annualized metrics utilize a 252-day business year instead of a 365-day calendar year to maintain consistency with market trading periods.
+- **Interactive Dashboards**: All Streamlit dashboard workspaces feature at least two interactive slicers/filters.
+- **Unit Clarity**: Scheme AUM columns are labeled as `aum_crore` to prevent confusion with industry-level AUM in lakh crores.
+- **Git Hygiene**: The SQLite `.db` binary file is git-ignored. Codebase structural state is shared and updated via `schema.sql` and `queries.sql`.

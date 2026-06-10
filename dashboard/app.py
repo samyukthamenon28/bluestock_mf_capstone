@@ -315,6 +315,173 @@ def load_portfolio_sectors(amfi_code):
     return df
 
 
+def compute_rolling_sharpe(df_nav_selected, window=90):
+    """Compute rolling Sharpe ratios for dynamic comparison."""
+    rolling_series = []
+    for name, group in df_nav_selected.groupby("scheme_name"):
+        group = group.sort_values("nav_date").set_index("nav_date")
+        full_range = pd.date_range(group.index.min(), group.index.max(), freq="D")
+        group = group.reindex(full_range).ffill().bfill()
+        
+        trading = group[group.index.dayofweek < 5].copy()
+        trading["returns"] = trading["nav_value"].pct_change()
+        returns = trading["returns"].dropna()
+        
+        rolling_mean = returns.rolling(window).mean()
+        rolling_std = returns.rolling(window).std()
+        rolling_sharpe = (rolling_mean / rolling_std) * np.sqrt(252)
+        
+        df_rs = pd.DataFrame(rolling_sharpe).reset_index()
+        df_rs.columns = ["Date", "Rolling Sharpe"]
+        df_rs["Scheme Name"] = name
+        rolling_series.append(df_rs)
+        
+    if rolling_series:
+        return pd.concat(rolling_series).dropna()
+    return pd.DataFrame()
+
+
+@st.cache_data
+def load_var_cvar_report():
+    """Load precalculated 95% VaR & CVaR report."""
+    report_path = ROOT / "var_cvar_report.csv"
+    if report_path.exists():
+        return pd.read_csv(report_path)
+    return pd.DataFrame()
+
+
+@st.cache_data
+def load_cohort_analysis():
+    """Calculate investor cohorts based on first transaction year."""
+    conn = get_connection()
+    df_trans = pd.read_sql_query("""
+        SELECT t.investor_id, t.transaction_date, t.amount_inr, t.transaction_type, f.scheme_name
+        FROM fact_transactions t
+        JOIN dim_fund f ON t.amfi_code = f.amfi_code
+    """, conn)
+    conn.close()
+    
+    df_trans["transaction_date"] = pd.to_datetime(df_trans["transaction_date"])
+    df_first = df_trans.groupby("investor_id")["transaction_date"].min().reset_index()
+    df_first.rename(columns={"transaction_date": "first_transaction_date"}, inplace=True)
+    df_first["cohort_year"] = df_first["first_transaction_date"].dt.year
+    
+    df_trans_cohort = df_trans.merge(df_first[["investor_id", "cohort_year"]], on="investor_id")
+    cohorts = df_trans_cohort["cohort_year"].unique()
+    cohort_results = []
+    
+    for yr in sorted(cohorts):
+        cohort_df = df_trans_cohort[df_trans_cohort["cohort_year"] == yr]
+        sip_df = cohort_df[cohort_df["transaction_type"] == "SIP"]
+        avg_sip = sip_df["amount_inr"].mean() if not sip_df.empty else 0.0
+        invest_df = cohort_df[cohort_df["transaction_type"].isin(["SIP", "Lumpsum"])]
+        total_inv = invest_df["amount_inr"].sum()
+        
+        if not cohort_df.empty:
+            top_fund = cohort_df["scheme_name"].value_counts().idxmax()
+        else:
+            top_fund = "N/A"
+            
+        cohort_results.append({
+            "Cohort Year": int(yr),
+            "Avg. SIP Amount (₹)": avg_sip,
+            "Total Invested (₹ Cr)": total_inv / 1e7,
+            "Top Fund Preference": top_fund
+        })
+    return pd.DataFrame(cohort_results)
+
+
+@st.cache_data
+def load_sip_continuity():
+    """Calculate SIP gaps and flag at-risk investors."""
+    conn = get_connection()
+    df_trans = pd.read_sql_query("""
+        SELECT investor_id, transaction_date, transaction_type
+        FROM fact_transactions
+        WHERE transaction_type = 'SIP'
+    """, conn)
+    conn.close()
+    
+    df_trans["transaction_date"] = pd.to_datetime(df_trans["transaction_date"])
+    sip_counts = df_trans["investor_id"].value_counts()
+    eligible_investors = sip_counts[sip_counts >= 6].index.tolist()
+    
+    at_risk_count = 0
+    total_eligible = len(eligible_investors)
+    
+    for inv_id in eligible_investors:
+        inv_sip = df_trans[df_trans["investor_id"] == inv_id].copy()
+        inv_sip.sort_values("transaction_date", inplace=True)
+        gaps = inv_sip["transaction_date"].diff().dt.days.dropna()
+        if len(gaps) > 0:
+            avg_gap = gaps.mean()
+            if avg_gap > 35:
+                at_risk_count += 1
+                
+    at_risk_rate = (at_risk_count / total_eligible) * 100 if total_eligible > 0 else 0.0
+    continuity_rate = 100 - at_risk_rate
+    return total_eligible, at_risk_count, continuity_rate
+
+
+@st.cache_data
+def load_hhi_concentration():
+    """Calculate Sector and Stock HHI for all equity funds."""
+    conn = get_connection()
+    df_holdings = pd.read_sql_query("""
+        SELECT p.amfi_code, p.sector, p.weight_pct, f.scheme_name
+        FROM portfolio_holdings p
+        JOIN dim_fund f ON p.amfi_code = f.amfi_code
+        WHERE f.category = 'Equity'
+    """, conn)
+    conn.close()
+    
+    hhi_results = []
+    equity_codes = df_holdings["amfi_code"].unique()
+    
+    for code in equity_codes:
+        fund_hld = df_holdings[df_holdings["amfi_code"] == code]
+        scheme_name = fund_hld["scheme_name"].iloc[0]
+        
+        sector_weights = fund_hld.groupby("sector")["weight_pct"].sum()
+        sector_hhi = np.sum(sector_weights ** 2)
+        stock_hhi = np.sum(fund_hld["weight_pct"] ** 2)
+        
+        hhi_results.append({
+            "AMFI Code": int(code),
+            "Scheme Name": scheme_name,
+            "Sector HHI": sector_hhi,
+            "Stock HHI": stock_hhi
+        })
+    return pd.DataFrame(hhi_results).sort_values("Sector HHI", ascending=False)
+
+
+def get_recommendations_df(risk_appetite: str):
+    """Retrieve top 3 funds sorted by Sharpe ratio matching the selected risk profile."""
+    risk_appetite = risk_appetite.strip().lower()
+    if risk_appetite == "low":
+        grades = ["Low"]
+    elif risk_appetite == "moderate":
+        grades = ["Moderate", "Moderately High"]
+    elif risk_appetite == "high":
+        grades = ["High", "Very High"]
+    else:
+        return pd.DataFrame()
+        
+    conn = get_connection()
+    placeholders = ",".join("?" for _ in grades)
+    query = f"""
+        SELECT f.amfi_code, f.scheme_name, f.fund_house, p.risk_grade, p.sharpe_ratio, p.return_3yr_pct
+        FROM dim_fund f
+        JOIN fact_performance p ON f.amfi_code = p.amfi_code
+        WHERE p.risk_grade IN ({placeholders})
+        ORDER BY p.sharpe_ratio DESC
+        LIMIT 3
+    """
+    df = pd.read_sql_query(query, conn, params=grades)
+    conn.close()
+    return df
+
+
 # ── Navigation Sidebar ─────────────────────────────────────────────────────────
 
 st.sidebar.markdown(
@@ -331,7 +498,8 @@ page = st.sidebar.radio(
         "NAV Analysis & Correlation",
         "Industry & AUM Growth",
         "Investor Demographics",
-        "Advanced Simulation & Optimization"
+        "Advanced Simulation & Optimization",
+        "Advanced Risk & Cohort Analytics"
     ]
 )
 
@@ -1107,10 +1275,259 @@ elif page == "Advanced Simulation & Optimization":
                 st.markdown("**Minimum Volatility Portfolio Weights**")
                 w_min = min_vol_port[[f"w_{n[:15]}" for n in port_funds]].values
                 df_w_min = pd.DataFrame({"Fund": port_funds, "Weight (%)": w_min * 100})
-                
                 fig_w_min = px.bar(df_w_min, x="Fund", y="Weight (%)", color="Fund", text_auto=".1f%", color_discrete_sequence=px.colors.qualitative.T10)
                 fig_w_min = style_plotly_figure(fig_w_min)
                 fig_w_min.update_layout(showlegend=False, height=300)
                 st.plotly_chart(fig_w_min, use_container_width=True)
-                
                 st.dataframe(df_w_min.style.format({"Weight (%)": "{:.2f}%"}), hide_index=True)
+
+
+# ── Page 6: Advanced Risk & Cohort Analytics (Day 6) ──────────────────────────
+
+elif page == "Advanced Risk & Cohort Analytics":
+    st.markdown("""
+        <div class="terminal-header">
+            <h1>Advanced Risk & Cohort Analytics</h1>
+            <p>Assess tail-risk metrics (VaR & CVaR), analyze rolling Sharpe ratios, track investor cohorts and SIP continuity rates, and review sector concentrations.</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    risk_tabs = st.tabs([
+        "VaR & CVaR Tail Risk", 
+        "Rolling Sharpe Timelines", 
+        "Cohort & SIP Continuity", 
+        "Sector Concentration (HHI)",
+        "Fund Recommender"
+    ])
+    
+    # ── TAB 1: VaR & CVaR ──────────────────────────────────────────────────────
+    with risk_tabs[0]:
+        st.markdown("### Historical Value at Risk (VaR) & Conditional VaR (CVaR)")
+        st.markdown("Metrics calculated at a **95% confidence level** using daily returns on business days (weekends/holidays forward-filled).")
+        
+        df_var_cvar = load_var_cvar_report()
+        
+        if df_var_cvar.empty:
+            st.warning("VaR & CVaR report file not found. Please run scripts/generate_advanced_analytics.py first.")
+        else:
+            col_v1, col_v2 = st.columns(2)
+            with col_v1:
+                search_scheme = st.text_input("Search Scheme Name", "")
+            with col_v2:
+                max_var_slider = st.slider("Filter by Max 95% Daily VaR Loss (%)", -3.0, 0.0, 0.0, 0.1)
+                
+            df_var_filtered = df_var_cvar.copy()
+            if search_scheme:
+                df_var_filtered = df_var_filtered[df_var_filtered["scheme_name"].str.contains(search_scheme, case=False)]
+            df_var_filtered = df_var_filtered[df_var_filtered["var_95"] >= (max_var_slider / 100.0)]
+            
+            # KPIs
+            col_k1, col_k2, col_k3 = st.columns(3)
+            highest_risk_row = df_var_cvar.sort_values("var_95").iloc[0]
+            lowest_risk_row = df_var_cvar.sort_values("var_95", ascending=False).iloc[0]
+            
+            with col_k1:
+                st.markdown(f"""
+                    <div class="kpi-card-cyber" style="border-color: rgba(239, 68, 68, 0.3);">
+                        <div class="kpi-label" style="color: #ef4444;">Highest Tail Risk Fund</div>
+                        <div class="kpi-val" style="color: #ef4444; font-size:13px; font-weight:normal;">{highest_risk_row['scheme_name'][:30]}...</div>
+                        <div style="font-size:14px; font-family:'Share Tech Mono'; color:#f87171; margin-top:5px;">VaR: {highest_risk_row['var_95']*100:.2f}% | CVaR: {highest_risk_row['cvar_95']*100:.2f}%</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with col_k2:
+                st.markdown(f"""
+                    <div class="kpi-card-cyber" style="border-color: rgba(34, 197, 94, 0.3);">
+                        <div class="kpi-label" style="color: #22c55e;">Lowest Tail Risk Fund</div>
+                        <div class="kpi-val" style="color: #22c55e; font-size:13px; font-weight:normal;">{lowest_risk_row['scheme_name'][:30]}...</div>
+                        <div style="font-size:14px; font-family:'Share Tech Mono'; color:#4ade80; margin-top:5px;">VaR: {lowest_risk_row['var_95']*100:.2f}% | CVaR: {lowest_risk_row['cvar_95']*100:.2f}%</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with col_k3:
+                st.markdown(f"""
+                    <div class="kpi-card-cyber">
+                        <div class="kpi-label">Average 95% Daily VaR</div>
+                        <div class="kpi-val">{(df_var_cvar['var_95'].mean()*100):.2f}%</div>
+                        <div style="font-size:11px; color:#94a3b8; margin-top:8px;">Avg. 95% CVaR: {(df_var_cvar['cvar_95'].mean()*100):.2f}%</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+            st.markdown("#### Tail-Risk Metrics by Scheme")
+            df_var_display = df_var_filtered.copy()
+            df_var_display.columns = ["AMFI Code", "Scheme Name", "95% Daily VaR (%)", "95% Daily CVaR (%)"]
+            st.dataframe(
+                df_var_display.style.format({
+                    "95% Daily VaR (%)": "{:.2%}",
+                    "95% Daily CVaR (%)": "{:.2%}"
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+            
+    # ── TAB 2: Rolling Sharpe Timelines ────────────────────────────────────────
+    with risk_tabs[1]:
+        st.markdown("### Dynamic Rolling Sharpe Ratio Timeline")
+        st.markdown("Analyze how the risk-adjusted return profiles of schemes evolve over time.")
+        
+        col_s1, col_s2 = st.columns([3, 1])
+        with col_s1:
+            selected_sharpe_funds = st.multiselect(
+                "Select Funds to Compare (Up to 5)",
+                options=df_scorecard["scheme_name"].tolist(),
+                default=df_scorecard["scheme_name"].head(3).tolist(),
+                key="sharpe_funds_sel"
+            )
+        with col_s2:
+            rolling_window_days = st.slider("Rolling Window (Trading Days)", 30, 180, 90, 10)
+            
+        if not selected_sharpe_funds:
+            st.warning("Please select at least one fund.")
+        else:
+            selected_codes = df_scorecard[df_scorecard["scheme_name"].isin(selected_sharpe_funds)]["amfi_code"].tolist()
+            df_nav_selected = load_nav_history(selected_codes)
+            
+            df_rolling_sharpe = compute_rolling_sharpe(df_nav_selected, window=rolling_window_days)
+            
+            if df_rolling_sharpe.empty:
+                st.info("No rolling data available for the selected range.")
+            else:
+                fig_rs = px.line(
+                    df_rolling_sharpe,
+                    x="Date",
+                    y="Rolling Sharpe",
+                    color="Scheme Name",
+                    color_discrete_sequence=px.colors.qualitative.Plotly
+                )
+                fig_rs = style_plotly_figure(fig_rs, f"Rolling {rolling_window_days}-Day Sharpe Ratios")
+                fig_rs.update_layout(
+                    xaxis_title="Date",
+                    yaxis_title="Sharpe Ratio (Annualized)",
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                st.plotly_chart(fig_rs, use_container_width=True)
+                
+    # ── TAB 3: Cohort & SIP Continuity ─────────────────────────────────────────
+    with risk_tabs[2]:
+        st.markdown("### Investor Cohort Analysis & SIP Continuity")
+        
+        df_cohorts = load_cohort_analysis()
+        tot_eligible, at_risk, cont_rate = load_sip_continuity()
+        
+        st.markdown("#### SIP Continuity Risk Indicators")
+        col_c1, col_c2, col_c3 = st.columns(3)
+        with col_c1:
+            st.markdown(f"""
+                <div class="kpi-card-cyber">
+                    <div class="kpi-label">Eligible Long-Term Investors (6+ SIPs)</div>
+                    <div class="kpi-val">{tot_eligible:,}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_c2:
+            st.markdown(f"""
+                <div class="kpi-card-cyber" style="border-color: rgba(239, 68, 68, 0.3);">
+                    <div class="kpi-label" style="color: #ef4444;">Flagged At-Risk Investors (Gap > 35 Days)</div>
+                    <div class="kpi-val" style="color: #ef4444;">{at_risk:,}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col_c3:
+            st.markdown(f"""
+                <div class="kpi-card-cyber" style="border-color: rgba(34, 197, 94, 0.3);">
+                    <div class="kpi-label" style="color: #22c55e;">Overall SIP Continuity Rate</div>
+                    <div class="kpi-val" style="color: #22c55e;">{cont_rate:.2f}%</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+        st.markdown("#### Investor Cohort Metrics (by first transaction year)")
+        st.dataframe(
+            df_cohorts.style.format({
+                "Avg. SIP Amount (₹)": "₹{:,.2f}",
+                "Total Invested (₹ Cr)": "₹{:,.4f} Cr"
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+        
+    # ── TAB 4: Sector Concentration (HHI) ──────────────────────────────────────
+    with risk_tabs[3]:
+        st.markdown("### Herfindahl-Hirschman Index (HHI) Concentrations")
+        st.markdown("HHI measures diversification. Higher HHI means higher concentration in few sectors/stocks. Formula: $\\text{HHI} = \\sum (\\text{weight\\_pct}_i^2)$.")
+        
+        df_hhi = load_hhi_concentration()
+        
+        col_h1, col_h2 = st.columns(2)
+        with col_h1:
+            search_hhi_fund = st.text_input("Search Equity Fund Name", "", key="hhi_search")
+        with col_h2:
+            min_sector_hhi = st.slider("Minimum Sector HHI (Concentration Floor)", 1000.0, 3000.0, 1000.0, 100.0)
+            
+        df_hhi_filtered = df_hhi.copy()
+        if search_hhi_fund:
+            df_hhi_filtered = df_hhi_filtered[df_hhi_filtered["Scheme Name"].str.contains(search_hhi_fund, case=False)]
+        df_hhi_filtered = df_hhi_filtered[df_hhi_filtered["Sector HHI"] >= min_sector_hhi]
+        
+        if df_hhi_filtered.empty:
+            st.info("No funds match the filter criteria.")
+        else:
+            fig_hhi = go.Figure()
+            fig_hhi.add_trace(go.Bar(
+                x=df_hhi_filtered["Scheme Name"],
+                y=df_hhi_filtered["Sector HHI"],
+                name="Sector HHI",
+                marker_color="#a855f7"
+            ))
+            fig_hhi.add_trace(go.Bar(
+                x=df_hhi_filtered["Scheme Name"],
+                y=df_hhi_filtered["Stock HHI"],
+                name="Stock HHI",
+                marker_color="#06b6d4"
+            ))
+            
+            fig_hhi = style_plotly_figure(fig_hhi, "Equity Funds HHI Concentration Comparison")
+            fig_hhi.update_layout(
+                xaxis_title="Fund Scheme",
+                yaxis_title="HHI Score",
+                barmode="group",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            st.plotly_chart(fig_hhi, use_container_width=True)
+            
+            st.dataframe(
+                df_hhi_filtered.style.format({
+                    "Sector HHI": "{:.2f}",
+                    "Stock HHI": "{:.2f}"
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+            
+    # ── TAB 5: Fund Recommender ────────────────────────────────────────────────
+    with risk_tabs[4]:
+        st.markdown("### Quantitative Fund Recommender")
+        st.markdown("Select your risk tolerance profile to get the top 3 recommended mutual funds based on historical Sharpe ratios.")
+        
+        selected_risk = st.selectbox(
+            "Select Risk Appetite Profile",
+            ["Low", "Moderate", "High"],
+            index=1,
+            key="recommender_risk_profile"
+        )
+        
+        df_recs = get_recommendations_df(selected_risk)
+        
+        if df_recs.empty:
+            st.warning("No matching recommendations found. Ensure the database contains valid performance and risk records.")
+        else:
+            st.markdown(f"#### Top 3 Recommended Funds for **{selected_risk}** Risk Appetite:")
+            
+            df_recs_display = df_recs.copy()
+            df_recs_display.columns = ["AMFI Code", "Scheme Name", "Fund House", "Risk Grade", "Sharpe Ratio", "3-Year Return"]
+            
+            st.dataframe(
+                df_recs_display.style.format({
+                    "Sharpe Ratio": "{:.2f}",
+                    "3-Year Return": "{:.2%}"
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            st.info("Disclaimer: Mutual fund investments are subject to market risks. Past performance is not indicative of future returns.")
