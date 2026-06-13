@@ -8,25 +8,16 @@ Mutual Fund analytics capstone project — ETL, EDA, performance metrics, and da
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the full ETL pipeline (cleans data, designs star schema, and loads SQLite)
-python scripts/etl_pipeline.py
+# Run the master E2E pipeline (cleans data, initializes schema, pulls NAVs, runs analytics, and builds documents)
+python scripts/run_pipeline.py
 
-# Execute the SQL queries and generate reports/analytical_report.md
-python scripts/run_analysis.py
-
-# Calculate performance scorecards and generate risk-adjusted ratios
-python scripts/generate_analytics.py
-
-# Calculate Day 6 advanced analytics (VaR/CVaR, cohorts, continuity, HHI)
-python scripts/generate_advanced_analytics.py
-
-# Launch the interactive Streamlit terminal
+# Launch the interactive Streamlit dashboard terminal
 streamlit run dashboard/app.py
 
 # Run the CLI recommender
 python recommender.py --risk Moderate
 
-# Verify the product integrity
+# Verify the E2E product integrity
 python scripts/verify_product.py
 ```
 
@@ -55,17 +46,36 @@ bluestock_mf_capstone/
 │   ├── generate_advanced_analytics.py ← Day 6: VaR, Sharpe, Cohorts, and HHI
 │   ├── run_analysis.py               ← Execute queries and save report
 │   ├── email_report.py               ← Day 5: weekly report compiler
-│   └── verify_product.py             ← Day 7: E2E integrity checker
+│   ├── generate_pdf_report.py        ← Programmatic PDF compiler (ReportLab)
+│   ├── generate_pptx_presentation.py  ← Programmatic PowerPoint builder (python-pptx)
+│   ├── run_pipeline.py               ← Day 7 Master execution pipeline coordinator
+│   └── verify_product.py             ← Day 7 E2E integrity checker
 ├── sql/
 │   ├── schema.sql                    ← SQLite DDL schema definition
 │   └── queries.sql                   ← Day 2: 10 analytical queries
 ├── dashboard/
 │   └── app.py                        ← Day 5 & 6 Streamlit financial terminal
 └── reports/
+    ├── Final_Report.pdf              ← Compiled 15-20 page PDF report
+    ├── Bluestock_MF_Presentation.pptx ← Compiled 12-slide PowerPoint presentation
     ├── analytical_report.md          ← Compiled SQL query results
     ├── weekly_performance_report.html ← Weekly HTML summary report
     └── figures/                      ← Saved EDA and performance charts
 ```
+
+## Dataset Descriptions
+
+The project ingests 10 primary datasets:
+1. **01_fund_master.csv**: Scheme registration data including AMFI codes, category, sub-category, plan type (Direct/Regular), benchmark, minimum investment limits, and primary fund manager.
+2. **02_nav_history.csv**: Historical day-by-day Net Asset Values (NAV) for all schemes, used to compute daily percentage returns.
+3. **03_aum_by_fund_house.csv**: Monthly asset totals under management (AUM) in crores and lakh crores aggregated by AMC (Fund House).
+4. **04_monthly_sip_inflows.csv**: Monthly industry-wide systematic investment plan (SIP) inflow totals and active accounts.
+5. **05_category_inflows.csv**: Monthly asset class inflows split by broad categories (Equity, Debt, Hybrid).
+6. **06_industry_folio_count.csv**: Aggregate account folio registration numbers across asset categories in India.
+7. **07_scheme_performance.csv**: Historical annual returns (1-year, 3-year, 5-year), risk categories, and Morningstar ratings.
+8. **08_investor_transactions.csv**: Demographics and transactions of investors (32,778 rows) including age, state, city, tier, payment modes, and annual income.
+9. **09_portfolio_holdings.csv**: Underlying stock weight allocations and industry sectors for each equity fund.
+10. **10_benchmark_indices.csv**: Historical daily closing values for Nifty 50 and Nifty 100 indices, used to calculate Alpha, Beta, and tracking errors.
 
 ## Scheduler Configuration (B1)
 
@@ -84,4 +94,4 @@ For Linux/MacOS systems, append the following to the crontab:
 - **CAGR Calculations**: Annualized metrics utilize a 252-day business year instead of a 365-day calendar year to maintain consistency with market trading periods.
 - **Interactive Dashboards**: All Streamlit dashboard workspaces feature at least two interactive slicers/filters.
 - **Unit Clarity**: Scheme AUM columns are labeled as `aum_crore` to prevent confusion with industry-level AUM in lakh crores.
-- **Git Hygiene**: The SQLite `.db` binary file is git-ignored. Codebase structural state is shared and updated via `schema.sql` and `queries.sql`.
+- **Git Hygiene**: The SQLite `.db` binary file is git-ignored. Codebase structural state is shared and updated via `schema.sql` and `queries.sql`.
