@@ -20,7 +20,7 @@ REQUIRED_FILES = [
     ROOT / "reports" / "analytical_report.md",
     ROOT / "reports" / "weekly_performance_report.html",
     ROOT / "reports" / "Final_Report.pdf",
-    ROOT / "reports" / "Bluestock_MF_Presentation.pptx",
+    ROOT / "reports" / "Bluestock_Presentation_Final.pptx",
     ROOT / "notebooks" / "Advanced_Analytics.ipynb",
     ROOT / "notebooks" / "Performance_Analytics.ipynb",
     ROOT / "notebooks" / "EDA_Analysis.ipynb",

@@ -57,7 +57,7 @@ bluestock_mf_capstone/
 │   └── app.py                        ← Day 5 & 6 Streamlit financial terminal
 └── reports/
     ├── Final_Report.pdf              ← Compiled 15-20 page PDF report
-    ├── Bluestock_MF_Presentation.pptx ← Compiled 12-slide PowerPoint presentation
+    ├── Bluestock_Presentation_Final.pptx ← Compiled 12-slide PowerPoint presentation
     ├── analytical_report.md          ← Compiled SQL query results
     ├── weekly_performance_report.html ← Weekly HTML summary report
     └── figures/                      ← Saved EDA and performance charts
