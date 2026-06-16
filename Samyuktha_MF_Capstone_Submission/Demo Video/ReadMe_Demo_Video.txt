@@ -1,0 +1,1 @@
+Note to reviewer: The Streamlit quantitative financial terminal can be launched locally by installing packages from requirements.txt and running: streamlit run dashboard/app.py. It exposes all six workspaces including scorecards, simulations, and risk metrics.
